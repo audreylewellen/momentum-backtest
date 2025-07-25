@@ -1,0 +1,10 @@
+tickers:
+  - AAPL
+  - MSFT
+  - SPY
+start_date: '2018-01-01'
+end_date: '2024-01-01'
+momentum:
+  k: 5
+  x: 0.02
+holding_period: 5 

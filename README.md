@@ -9,6 +9,7 @@ Implement and evaluate a basic momentum trading strategy on historical U.S. stoc
 - yfinance for historical stock data
 - matplotlib for visualizations
 - statsmodels for CAPM regression
+- PyYAML for config file parsing
 
 ## Strategy 
 Momentum strategy: 
@@ -22,41 +23,30 @@ Momentum strategy:
   pip install -r requirements.txt
   ```
 
-2. **Run the backtest**
-   
-  Run the main script:
-  ```bash
-  python momentum_backtest.py
-  ```
+2. **Configure your backtest**
 
-3. **View Summary Statistics**
-   
-  For each ticker (e.g., AAPL, MSFT), the script outputs:
-  - Number of trades
-  - Average return per trade
-  - Win rate
+   Edit `config.yaml` to set your tickers, date range, and strategy parameters:
 
-4. **View Performance Plots**
+   ```yaml
+   tickers:
+     - AAPL
+     - MSFT
+     - SPY
+   start_date: '2018-01-01'
+   end_date: '2024-01-01'
+   momentum:
+     k: 5
+     x: 0.02
+   holding_period: 5
+   ```
 
-  - Cumulative return curves for the **momentum strategy** vs. **buy-and-hold**.
-  - Separate plots for each stock.
+3. **Run the backtest and CAPM analysis**
 
-5. **CAPM Regression (AAPL Example)**
-   
-  The script performs a CAPM analysis for AAPL strategy returns:
-  - Calculates **alpha**, **beta**, **p-values**, and **R²**
-  - Visualizes the fit of strategy returns vs. market (SPY)
+   ```bash
+   python main.py --config config.yaml
+   ```
 
-## Parameter Adjustments 
-To adjust the backtest:
-- Open `momentum_backtest.py`
-- Edit these variables:
-  ```python
-  tickers = ['AAPL', 'MSFT', 'SPY']
-  k = 5       # lookback period
-  x = 0.02    # threshold
-  h = 5       # holding period
-  ```
+   - This will run the momentum backtest, plot results, and perform CAPM alpha & beta analysis for the AAPL strategy.
 
 
 
