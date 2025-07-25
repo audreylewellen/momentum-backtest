@@ -52,6 +52,22 @@ def run_backtest_and_plot(config):
     else:
         print("No trades for AAPL.")
 
+    # Add 'StrategyReturn' column to each DataFrame for downstream analysis (e.g., CAPM)
+    for ticker in tickers:
+        df = data[ticker]
+        momentum_returns = np.array(backtest_results[ticker])
+        df['StrategyReturn'] = 0.0
+        i = 0
+        trade_idx = 0
+        while i < len(df) - h and trade_idx < len(momentum_returns):
+            if df['Signal'].iloc[i] == 1:
+                df.iloc[i+1, df.columns.get_loc('StrategyReturn')] = momentum_returns[trade_idx]
+                trade_idx += 1
+                i += h
+            else:
+                i += 1
+        data[ticker] = df
+
     # Plot cumulative returns for all stocks
     fig, axes = plt.subplots(len(tickers), 1, figsize=(10, 6 * len(tickers)), sharex=True)
     if len(tickers) == 1:

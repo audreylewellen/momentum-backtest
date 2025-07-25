@@ -15,8 +15,6 @@ if __name__ == "__main__":
     data, backtest_results = run_backtest_and_plot(config)
 
     # CAPM for AAPL as example
-    from pandas import Series
-    aapl_df = data['AAPL']
-    strategy_returns = aapl_df.loc[aapl_df['StrategyReturn'] != 0, 'StrategyReturn']
+    strategy_returns = data['AAPL'].loc[data['AAPL']['StrategyReturn'] != 0, 'StrategyReturn']
     strategy_returns.name = 'Strategy'
     run_capm_analysis(strategy_returns, 'SPY', 'AAPL Momentum Strategy') 

@@ -47,6 +47,7 @@ Momentum strategy:
    ```
 
    - This will run the momentum backtest, plot results, and perform CAPM alpha & beta analysis for the AAPL strategy.
+   - Note: After the first plot window (showing the backtest results) appears, you need to close it to see the CAPM regression plot and output.
 
 
 
