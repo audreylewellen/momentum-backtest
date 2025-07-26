@@ -1,3 +1,6 @@
 pandas
 yfinance
-matplotlib 
+matplotlib
+PyYAML
+statsmodels
+numpy 

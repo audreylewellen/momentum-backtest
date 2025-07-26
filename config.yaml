@@ -8,3 +8,5 @@ momentum:
   k: 5
   x: 0.02
 holding_period: 5 
+train_window: 252  
+test_window: 63     

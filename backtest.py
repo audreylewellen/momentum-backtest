@@ -3,7 +3,110 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
+
+def sharpe_ratio(returns, periods_per_year=252):
+    """
+    Calculate the annualized Sharpe ratio of a return series.
+    """
+    mean = np.mean(returns)
+    std = np.std(returns)
+    if std == 0:
+        return np.nan
+    return (mean / std) * np.sqrt(periods_per_year)
+
+
+def max_drawdown(cum_returns):
+    """
+    Calculate the maximum drawdown of a cumulative return series.
+    """
+    roll_max = np.maximum.accumulate(cum_returns)
+    drawdown = (cum_returns - roll_max) / roll_max
+    return drawdown.min()
+
+
+def t_statistic(returns):
+    """
+    Calculate the t-statistic for the mean of a return series.
+    """
+    mean = np.mean(returns)
+    std = np.std(returns)
+    n = len(returns)
+    if std == 0 or n == 0:
+        return np.nan
+    return mean / (std / np.sqrt(n))
+
+
+def run_walkforward_backtest(df, k, x, h, train_window, test_window):
+    """
+    Perform walk-forward backtesting with rolling train/test windows.
+    Args:
+        df (pd.DataFrame): DataFrame with at least a 'Close' column (or similar).
+        k (int): Lookback period for momentum calculation.
+        x (float): Momentum threshold for signal.
+        h (int): Holding period (in bars).
+        train_window (int): Number of periods in each training window.
+        test_window (int): Number of periods in each test window.
+        verbose (bool): If True, print debug output (default False).
+    Returns:
+        np.ndarray: Array of all test-period returns from all windows.
+    """
+    df = df.reset_index(drop=True)
+
+    # Flatten columns if MultiIndex
+    if isinstance(df.columns, pd.MultiIndex):
+        df.columns = ['_'.join(col).strip() if isinstance(col, tuple) else col for col in df.columns.values]
+    close_col = 'Close'
+    for col in df.columns:
+        if 'Close' in col:
+            close_col = col
+            break
+
+    n = len(df)
+    test_returns = []
+    start = 0
+    window_count = 0
+
+    while start + train_window + test_window <= n:
+        train_idx = range(start, start + train_window)
+        test_idx = range(start + train_window, start + train_window + test_window)
+        # Prepend last k rows from train to test for momentum calculation
+        if start + train_window - k >= 0:
+            prepend_idx = range(start + train_window - k, start + train_window)
+            full_idx = list(prepend_idx) + list(test_idx)
+            test_df = df.iloc[full_idx].copy()
+            test_df['Momentum'] = test_df[close_col].pct_change(k)
+            test_df['Signal'] = (test_df['Momentum'] > x).astype(int)
+            # Drop the prepended rows
+            test_df = test_df.iloc[k:]
+        else:
+            test_df = df.iloc[list(test_idx)].copy()
+            test_df['Momentum'] = test_df[close_col].pct_change(k)
+            test_df['Signal'] = (test_df['Momentum'] > x).astype(int)
+        i = 0
+        trades_in_window = 0
+        while i < len(test_df) - h:
+            if test_df['Signal'].iloc[i] == 1:
+                entry = test_df[close_col].iloc[i+1]
+                exit_ = test_df[close_col].iloc[i+1+h-1]
+                ret = (exit_ - entry) / entry
+                test_returns.append(ret)
+                trades_in_window += 1
+                i += h
+            else:
+                i += 1
+        window_count += 1
+        start += test_window
+    return np.array(test_returns)
+
 def run_backtest_and_plot(config):
+    """
+    Run a simple momentum backtest for all tickers in config, plot results, and return data/results.
+    
+    Returns:
+        tuple:
+            - data (dict): Dict of DataFrames for each ticker, with calculated columns.
+            - backtest_results (dict): Dict of lists of trade returns for each ticker.
+    """
     tickers = config['tickers']
     start_date = config['start_date']
     end_date = config['end_date']
@@ -112,3 +215,21 @@ def run_backtest_and_plot(config):
     plt.tight_layout()
     plt.show()
     return data, backtest_results 
+
+if __name__ == "__main__":
+    # Example usage for AAPL
+    import yaml
+    with open('config.yaml', 'r') as f:
+        config = yaml.safe_load(f)
+    df = yf.download('AAPL', start=config['start_date'], end=config['end_date'])
+    df = df[['Close']]
+    k = config['momentum']['k']
+    x = config['momentum']['x']
+    h = config['holding_period']
+    train_window = config['train_window']
+    test_window = config['test_window']
+    wf_returns = run_walkforward_backtest(df, k, x, h, train_window, test_window)
+    print(f"Walk-forward backtest: {len(wf_returns)} trades")
+    print(f"Sharpe ratio: {sharpe_ratio(wf_returns):.3f}")
+    print(f"Max drawdown: {max_drawdown(np.cumprod(1+wf_returns)):.3%}")
+    print(f"t-statistic: {t_statistic(wf_returns):.3f}") 
